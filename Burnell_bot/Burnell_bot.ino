@@ -1,11 +1,11 @@
-include <PubSubClient.h>
+#include <PubSubClient.h>
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <BH1750.h>
 #include <DHT.h>
 
 #define DHTPIN 14          // DHT22 connected to gpio14
-#define DHTTYPE DHT22     // Calls are to DHT22 type sensor not DHT11
+#define DHTTYPE DHT22     // Calls are to DHT22  type sensor not DHT11
 // Initialize DHT sensor with threshold parameter of 15 as advised in https://github.com/esp8266/Arduino
 DHT dht(DHTPIN, DHTTYPE, 15);
 
@@ -28,17 +28,19 @@ uint16_t lux = 0;
    
    
 // Wifi and MQTT specifics
-char wifissid[] = "xxxxxxx";   // Wifi noetwork name or ESSID/SSID
-char wifipwd[] = "xxxxxxx";   // Wifi password
+char wifissid[] = "*****";   // Wifi noetwork name or ESSID/SSID
+char wifipwd[] = "*****";   // Wifi password
 
-char nodeprefix[] = "ESP8266-12-";   // Prefix for node name rest is mac address
-char mqttsrvr[] = "192.168.1.82";    // Ip address of mqtt broker
-char mqttuid[] = "mqttusername";   // mqtt broker username
-char mqttpwd[] = "mqrrpassword"; // mqtt broker password
+char nodeprefix[] = "BurnellBot";   // Prefix for node name rest is mac address
+char mqttsrvr[] = "10.3.11.253";    // Ip address of mqtt broker
+char mqttuid[] = "";   // mqtt broker username
+char mqttpwd[] = ""; // mqtt broker password
 
-char topic_node[] = "HomeNoT/BackBedRoom/node";   // topic name for LWT node up/down notifications
-char topic_test[] = "test";   // topic name for temperature readings
-
+char topic_node[]   = "SHHNoT/commons/node/burnellBot";   // topic name for LWT node up/down notifications
+char topic_temperature[] = "SHHNoT/commons/sensor/burnellBot/temperature";   // topic name for temperature readings
+char topic_humidity[]    = "SHHNoT/commons/sensor/burnellBot/humidity";
+char topic_light[]       = "SHHNoT/commons/sensor/burnellBot/light";
+char topic_motion[]      = "SHHNoT/commons/sensor/burnellBot/motion";
 String NodeName="";
 
 // tx pacing counter
@@ -109,7 +111,7 @@ void BrokerConnect() {
    Serial.print(" connecting to ");
    Serial.print(mqttsrvr);
    Serial.print(" as ");
-   Serial.println(mqttuid);
+//   Serial.println(mqttuid);
 
    if (client.connect((char*)NodeName.c_str(), mqttuid, mqttpwd, topic_node, 0, 0,  (char*)lwtDn.c_str())) {
       Serial.println("Connected to MQTT broker");
@@ -179,7 +181,7 @@ void do_humidity(){
    result = dht.readHumidity();
    if(!isnan(result)){
       humidity = result;
-      if (client.publish(topic_test, (char*)humidity.c_str())) {
+      if (client.publish(topic_humidity, (char*)humidity.c_str())) {
          Serial.print("Humidity: ");
          Serial.print(humidity);
          Serial.println("%");
@@ -202,7 +204,7 @@ void do_temperature(){
    result = dht.readTemperature();
    if(!isnan(result)){ 
       temperature = result;
-      if (client.publish(topic_test, (char*)temperature.c_str())) {
+      if (client.publish(topic_temperature, (char*)temperature.c_str())) {
          Serial.print("Temperature: ");
          Serial.print(temperature);
          Serial.println("*C");        
@@ -248,7 +250,7 @@ void loop() {
        if ((motionDetected > 0) && (nextMotionReport < millis())){
          String motion;
          motion = motionDetected;
-         client.publish("test", (char*)motion.c_str());
+         client.publish(topic_motion, (char*)motion.c_str());
          motionDetected = 0;
          nextMotionReport = millis() + motionInterval;
        }
@@ -266,7 +268,7 @@ void loop() {
        if((lux-lastReportedLux > 50) or (lastReportedLux - lux > 50)){
          {String light;
          light = lux;
-         client.publish("test", (char*)light.c_str());}
+         client.publish(topic_light, (char*)light.c_str());}
          lastReportedLux = lux;
        }
        nextAction = 2;
